@@ -224,12 +224,31 @@ reagent --allow-outside-cwd "更新 ~/.bashrc"
 
 事件覆盖完整生命周期：会话开始/结束、agent 运行、工具调用、确认决策、完整 prompt 载荷。
 
-校验证据完整性：
+### 校验证据完整性
+
+仓库附带独立的 Python 校验脚本 [`verify_session.py`](verify_session.py)，无需任何依赖（纯标准库），适合取证环境独立校验哈希链：
 
 ```bash
-bun run verify:session       # 校验最新会话的哈希链
-bun run verify:session -- <id>   # 校验指定会话
+# 校验当前目录下最近一次的会话
+python3 verify_session.py
+
+# 校验指定会话（用 session id）
+python3 verify_session.py <session-id>
+
+# 校验指定会话目录
+python3 verify_session.py <目录路径>
 ```
+
+**退出码：** `0` = 哈希链完整；`1` = 会话不存在或被篡改。
+
+```bash
+$ python3 verify_session.py
+Session: /path/to/.cook/sessions/00e08432-...
+Events:  12
+Integrity: OK — hash chain of 12 events intact
+```
+
+校验原理：每条事件哈希 = `sha256(上一条哈希 + 该事件内容)`，从 `genesis` 起始逐条重算，任何一条被修改都会导致链路断裂。
 
 > 诊断阶段默认只读。任何写操作前先记录原文 hash、必要时备份——这是应急响应人设的第一准则。
 
