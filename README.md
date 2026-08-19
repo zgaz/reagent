@@ -11,291 +11,249 @@ d88' `"Y8 d88' `88b d88' `88b  888 .8P'
 </p>
 
 <p align="center">
-  <strong>A portable terminal AI agent that runs tasks in natural language.</strong><br/>
-  One binary. No runtime. Works with any LLM provider.
+  <strong>面向安全应急响应的终端 AI Agent</strong><br/>
+  单二进制 · 无运行时依赖 · 模型无关
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#usage">Usage</a> ·
-  <a href="#providers--models">Providers</a> ·
-  <a href="#safety">Safety</a> ·
-  <a href="#configuration">Configuration</a>
+  <a href="#quick-start">快速开始</a> ·
+  <a href="#usage">使用方式</a> ·
+  <a href="#safety">安全机制</a> ·
+  <a href="#audit">审计取证</a> ·
+  <a href="#configuration">配置</a> ·
+  <a href="#installation">安装</a>
 </p>
 
 ---
 
-## Why cook?
+## 为什么用 reagent？
 
-Most AI coding tools lock you into an editor, a specific model, or a subscription. **cook** is different:
+应急响应最怕工具锁死编辑器、绑定特定模型、或者依赖一堆运行时。**reagent** 不一样：
 
-- **Shell-native** — lives in your terminal, works with pipes, scripts, and cron jobs
-- **Model-agnostic** — swap between OpenAI, Anthropic, Google, Groq, or Vercel AI Gateway with a flag
-- **Single binary** — compiles to a standalone executable with zero runtime dependencies
-- **Safe by default** — every file write and destructive command requires your approval
-- **Extensible** — bring your own system prompts, command aliases, and agent configurations
+- **终端原生** — 就在终端里干活，支持管道、脚本、定时任务
+- **模型无关** — 切换 OpenAI / Anthropic / 小米 MiMo 等兼容端点，只需改配置
+- **单二进制** — 编译成独立可执行文件，零运行时依赖，拷到哪用到哪
+- **安全默认** — 写文件和破坏性命令必须确认
+- **取证优先** — 内置应急响应工程师人设，审计日志带哈希链防篡改
 
 ```bash
-# just talk to it
-cook find all TODO comments in this repo and summarize them
+# 直接对话
+reagent
 
-# pipe data in
-cat server.log | cook "find the root cause of the 502 errors"
+# 单条指令
+reagent "查看当前目录文件"
 
-# use command aliases
-cook /create-pr
+# 管道输入
+cat server.log | reagent "找出 502 错误的根本原因"
+
+# 命令别名
+reagent /create-pr
 ```
 
 ---
 
-## Table of Contents
+## 目录
 
-- [Quick Start](#quick-start)
-- [Usage](#usage)
-  - [Natural Language](#natural-language)
-  - [Piped Input](#piped-input)
-  - [Command Aliases](#command-aliases)
-  - [Agents](#agents)
-  - [Output Modes](#output-modes)
-  - [Raw Terminal Mode](#raw-terminal-mode)
-- [Providers & Models](#providers--models)
-- [Safety](#safety)
-- [Configuration](#configuration)
-  - [Config Precedence](#config-precedence)
-  - [Example Config](#example-config)
-  - [System Prompt Composition](#system-prompt-composition)
-- [Session Logs & Visualization](#session-logs--visualization)
-- [CLI Reference](#cli-reference)
-- [Installation](#installation)
-  - [Install Script](#install-script)
-  - [Build From Source](#build-from-source)
-- [Development](#development)
+- [快速开始](#quick-start)
+- [使用方式](#usage)
+  - [自然语言](#自然语言)
+  - [管道输入](#管道输入)
+  - [命令别名](#命令别名)
+  - [Agent 配置](#agent-配置)
+  - [输出模式](#输出模式)
+- [安全机制](#safety)
+- [审计取证](#audit)
+- [配置](#configuration)
+- [安装](#installation)
 
 ---
 
-## Quick Start
+## 快速开始
 
 ```bash
-# install
-curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/devadutta/cook/main/install.sh | sh
+# 1. 下载对应平台的二进制文件
+chmod +x reagent-<平台>
 
-# use your ChatGPT subscription
-cook login
+# 2. 初始化配置
+./reagent config init
 
-# or set any provider API key (pick one)
-export ANTHROPIC_API_KEY="sk-..."
-export OPENAI_API_KEY="sk-..."
-export GOOGLE_GENERATIVE_AI_API_KEY="..."
+# 3. 填入 API Key（编辑 .cook/config.json）
+#    provider_api_keys: { "OPENAI_API_KEY": "sk-...", "OPENAI_BASE_URL": "..." }
 
-# go
-cook "explain what this project does"
+# 4. 直接进入交互对话
+./reagent
 ```
 
-cook auto-detects your saved ChatGPT login or API key and picks a sensible model. No config file required.
+reagent 会根据 `.cook/config.json` 里的配置自动选择模型。配置文件跟随二进制所在目录，拷到哪、配置带到哪。
 
 ---
 
-## Usage
+## 使用方式
 
-### Natural Language
+### 自然语言
 
-Just type what you want after `cook`. Quotes are optional — use them when your instruction contains special shell characters.
-
-```bash
-# unquoted works fine
-cook find all python files older than 2 months
-
-# quotes recommended for complex instructions
-cook "find all *.py files modified before $(date -d '2 months ago' +%Y-%m-%d)"
-```
-
-cook has four built-in tools it can use to accomplish tasks:
-
-| Tool | What it does |
-|------|-------------|
-| **Read** | Read files from disk |
-| **Write** | Create or overwrite files (requires approval) |
-| **Edit** | Find-and-replace edits applied atomically |
-| **Bash** | Run shell commands with timeout and output limits |
-
-### Piped Input
-
-cook reads from stdin when data is piped in. Small inputs are inlined into the prompt; larger inputs are written to a temp file automatically.
+直接用自然语言描述任务，引号在指令含特殊字符时使用：
 
 ```bash
-cat filelist.txt | cook "rename these to kebab-case"
-git diff HEAD~3 | cook "write a changelog entry for these changes"
-ps aux | cook "which process is using the most memory and why?"
+# 无参数直接进入交互对话
+reagent
+
+# 单条指令
+reagent 查看当前目录文件
+
+# 复杂指令建议加引号
+reagent "找出所有修改时间早于 2 个月的 python 文件"
 ```
 
-### Command Aliases
+reagent 内置四个工具来完成工作：
 
-Save frequently used prompts as `.md` files and invoke them with `/name`:
+| 工具 | 作用 |
+|------|------|
+| **Read** | 读取磁盘文件 |
+| **Write** | 创建或覆盖文件（需确认） |
+| **Edit** | 原子化的查找替换编辑 |
+| **Bash** | 运行带超时和输出上限的 shell 命令 |
+
+### 管道输入
+
+有数据管道进来时，reagent 会自动读取 stdin。小输入直接内联到 prompt，大输入自动写入临时文件。
 
 ```bash
-cook /create-pr
-cook /review-code
-cook /fix-lint
+cat filelist.txt | reagent "把这些改名为 kebab-case"
+git diff HEAD~3 | reagent "为这些改动写一条变更日志"
+ps aux | reagent "哪个进程占用了最多内存？为什么？"
 ```
 
-This resolves `create-pr.md` from these directories (first match wins):
+### 命令别名
 
-| Priority | Local | Home |
-|----------|-------|------|
+把常用指令存成 `.md` 文件，用 `/name` 调用：
+
+```bash
+reagent /create-pr
+reagent /review-code
+reagent /fix-lint
+```
+
+按以下目录顺序解析（先命中先用）：
+
+| 优先级 | 本地 | 全局 |
+|--------|------|------|
 | 1 | `.cook/commands/` | `~/.cook/commands/` |
 | 2 | `.cursor/commands/` | `~/.cursor/commands/` |
 | 3 | `.claude/commands/` | `~/.claude/commands/` |
 | 4 | `.codex/commands/` | `~/.codex/commands/` |
 
-Local paths are always checked before home paths within each provider.
+### Agent 配置
 
-### Agents
-
-Define multiple agent configurations with different providers and models. Switch between them per run:
+可以在配置文件里定义多个 agent，用不同 provider 和模型，按需切换：
 
 ```bash
-# use the default agent
-cook "summarize this repo"
+# 用默认 agent
+reagent "总结这个仓库"
 
-# use a fast agent for quick tasks
-cook --agent fast "what does main.ts export?"
+# 用快速 agent 处理简单任务
+reagent --agent fast "main.ts 导出了什么？"
 ```
 
-Agents are defined in your config file — see [Configuration](#configuration).
-
-### Output Modes
+### 输出模式
 
 ```bash
-# default: status on stderr, final answer on stdout
-cook "summarize this repo"
+# 默认：状态输出到 stderr，最终答案输出到 stdout
+reagent "总结这个仓库"
 
-# quiet: suppress status, keep final output
-cook --quiet "summarize this repo"
+# quiet：抑制状态，保留最终输出
+reagent --quiet "总结这个仓库"
 
-# debug: verbose logging on stderr
-cook --debug "summarize this repo"
+# debug：在 stderr 输出详细日志
+reagent --debug "总结这个仓库"
 
-# combine with pipes — only the final answer goes to stdout
-cook "list all exported functions" > functions.txt
+# 配合管道 — 只有最终答案进入 stdout
+reagent "列出所有导出的函数" > functions.txt
 ```
 
-### Raw Terminal Mode
+### Raw 终端模式
 
-When you want the raw output of a command instead of an AI summary:
+想直接拿到命令原始输出而不是 AI 总结：
 
 ```bash
-cook --raw "find my public IP address"
-# → directly prints the command output, no summarization step
-```
-
-Enable per-agent with `raw_bash_output: true` in config, or per-run with `--raw`.
-
----
-
-## Providers & Models
-
-cook works with multiple AI providers. Sign in with ChatGPT or set the appropriate API key, and cook picks the right one automatically.
-
-| Provider | Authentication | Default Model |
-|----------|----------------|---------------|
-| Vercel AI Gateway | `AI_GATEWAY_API_KEY` | `google/gemini-3-flash-preview` |
-| OpenAI API | `OPENAI_API_KEY` | `gpt-5.2` |
-| OpenAI ChatGPT | `cook login` | `gpt-5.6-sol` |
-| Anthropic | `ANTHROPIC_API_KEY` | `claude-sonnet-4-6` |
-| Google | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-flash-preview` |
-| Groq | `GROQ_API_KEY` | `moonshotai/kimi-k2-instruct-0905` |
-
-**Auto-selection precedence** (when using the default agent): Gateway → OpenAI API key → OpenAI ChatGPT login → Anthropic → Google → Groq.
-
-You can also store keys in the config file instead of environment variables — see [Example Config](#example-config).
-
-### Sign in with ChatGPT
-
-```bash
-# browser OAuth with PKCE
-cook login
-
-# for SSH, containers, or other headless environments
-cook login --device-code
-
-# inspect or remove Cook's saved login
-cook login status
-cook logout
-```
-
-This uses OpenAI's ChatGPT OAuth flow and Codex Responses endpoint, so usage counts against the signed-in account's ChatGPT plan rather than API billing. Availability and limits depend on the account's plan and workspace policy. See OpenAI's [Codex authentication documentation](https://learn.chatgpt.com/docs/auth).
-
-Cook stores the access and refresh tokens in `~/.cook/auth.json` with owner-only permissions (`0600`) and refreshes access automatically. Treat that file like a password. `cook logout` removes it.
-
-To pin subscription-backed OpenAI models, configure `openai-codex` agents:
-
-```json
-{
-  "default_agent": "openai",
-  "agents": {
-    "openai": {
-      "provider": "openai-codex",
-      "model": "gpt-5.6-sol"
-    },
-    "openai-fast": {
-      "provider": "openai-codex",
-      "model": "gpt-5.6-luna"
-    }
-  }
-}
+reagent --raw "查一下我的公网 IP"
+# → 直接打印命令输出，不做总结
 ```
 
 ---
 
-## Safety
+## 安全机制
 
-cook is designed to be safe by default. You stay in control.
+reagent 默认安全设计，你始终掌握控制权。
 
-- **Mutation approval** — Write, Edit, and destructive Bash commands require confirmation before executing
-- **Smart classification** — the model flags whether each command is mutating (no brittle regex matching)
-- **Path scoping** — file access is restricted to the current directory by default
-- **Dry-run mode** — preview what cook would do without making changes
+- **变更确认** — Write、Edit 和破坏性 Bash 命令执行前必须确认
+- **智能分类** — 模型判断每条命令是否为变更操作（不做脆弱的正则匹配）
+- **路径作用域** — 文件访问默认限制在当前目录
+- **Dry-run 模式** — 预览 reagent 会做什么，不实际执行
 
-When prompted for confirmation, you can respond with:
+确认提示时你可以输入：
 
-| Input | Effect |
-|-------|--------|
-| `y` / `yes` | Approve this action |
-| `n` / `no` / Enter | Deny this action |
-| `a` / `all` | Approve this and all future mutations in this run |
-| *free text* | Deny and provide guidance to the agent |
+| 输入 | 效果 |
+|------|------|
+| `y` / `yes` | 同意本次操作 |
+| `n` / `no` / Enter | 拒绝本次操作 |
+| `a` / `all` | 同意本次及之后所有变更 |
+| *任意文字* | 拒绝并给 agent 提供指引 |
 
 ```bash
-# skip all confirmations (use with care)
-cook --yes "update all imports in src/"
+# 跳过所有确认（慎用）
+reagent --yes "更新 src/ 下所有 import"
 
-# preview mutations without executing
-cook --dry-run "refactor the auth module"
+# 预览变更而不执行
+reagent --dry-run "重构 auth 模块"
 
-# allow file operations outside cwd
-cook --allow-outside-cwd "update ~/.bashrc"
+# 允许当前目录之外的文件操作
+reagent --allow-outside-cwd "更新 ~/.bashrc"
 ```
 
 ---
 
-## Configuration
+## 审计取证
 
-### Config Precedence
+开启 `session_logs: true` 后，reagent 记录完整的运行历史，每条事件带 **SHA-256 哈希链**，可用于应急响应的证据保全与篡改检测。
 
-Flags → Local config → Global config → Defaults
-
-```bash
-# create local config (.cook/config.json)
-cook config init
-
-# create global config (~/.cook/config.json)
-cook config init --global
-
-# both, overwriting existing files
-cook config init --global --local --force
+```
+.cook/sessions/<uuid>/
+├── session.json       # 元数据（时间、agent、provider、model、args）
+└── events.jsonl       # 追加式事件流
 ```
 
-### Example Config
+事件覆盖完整生命周期：会话开始/结束、agent 运行、工具调用、确认决策、完整 prompt 载荷。
+
+校验证据完整性：
+
+```bash
+bun run verify:session       # 校验最新会话的哈希链
+bun run verify:session -- <id>   # 校验指定会话
+```
+
+> 诊断阶段默认只读。任何写操作前先记录原文 hash、必要时备份——这是应急响应人设的第一准则。
+
+---
+
+## 配置
+
+### 配置优先级
+
+Flags → 本地配置 → 全局配置 → 默认值
+
+```bash
+# 创建本地配置（.cook/config.json）
+reagent config init
+
+# 创建全局配置（~/.cook/config.json）
+reagent config init --global
+
+# 两个都创建，覆盖已有文件
+reagent config init --global --local --force
+```
+
+### 示例配置
 
 ```json
 {
@@ -306,167 +264,65 @@ cook config init --global --local --force
   "allow_outside_cwd": false,
   "quiet": false,
   "debug": false,
-  "session_logs": false,
+  "session_logs": true,
   "provider_api_keys": {
     "OPENAI_API_KEY": "sk-...",
-    "ANTHROPIC_API_KEY": "sk-..."
+    "OPENAI_BASE_URL": "https://api.openai.com/v1"
   },
   "default_agent": "default",
   "agents": {
     "default": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6",
-      "prompt_files": {
-        "system_append": [".cook/PROMPT_APPEND.md"]
-      }
+      "provider": "openai",
+      "model": "mimo-v2.5-pro"
     },
     "fast": {
-      "provider": "groq",
-      "model": "llama-3.3-70b-versatile"
+      "provider": "openai",
+      "model": "mimo-v2.5"
     }
   }
 }
 ```
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `max_steps` | `12` | Maximum tool-use iterations per run (1–100) |
-| `bash_timeout_ms` | `30000` | Bash command timeout in ms (100–3,600,000) |
-| `bash_output_limit_bytes` | `1048576` | Max captured bash output (1KB–20MB) |
-| `stdin_inline_max_bytes` | `65536` | Stdin size before switching to temp file (1KB–5MB) |
-| `require_confirm_mutations` | `true` | Require approval for file writes and destructive commands |
-| `allow_outside_cwd` | `false` | Allow file operations outside the working directory |
-| `quiet` | `false` | Suppress status/progress output |
-| `debug` | `false` | Enable detailed debug logging |
-| `session_logs` | `false` | Record session logs to `~/.cook/sessions/` |
+### 系统 Prompt 组成
 
-**Agent-level options:**
+reagent 按以下顺序组装系统 prompt：
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `provider` | auto | One of: `gateway`, `openai`, `openai-codex`, `anthropic`, `google`, `groq` |
-| `model` | auto | Model identifier for the provider |
-| `raw_bash_output` | `false` | Enable raw terminal output mode |
-| `prompt_files.system` | — | Custom system prompt file |
-| `prompt_files.system_append` | — | Additional prompt files appended in order |
-| `ignore_agents_md` | `false` | Skip `AGENTS.md` and `CLAUDE.md` context files |
+1. 内置基础指令（主机上下文、工具、安全规则）
+2. **System 主体**：agent 的 `prompt_files.system` → `.cook/prompts/SYSTEM.md` → `.cook/SYSTEM.md`
+3. **追加文件**：`prompt_files.system_append` 中的每个文件，按顺序
+4. **上下文文件**：`AGENTS.md`、`CLAUDE.md`、`cook.md`（在 cwd 自动发现）
 
-### System Prompt Composition
-
-cook composes the system prompt in this order:
-
-1. Built-in base instructions (host context, tools, safety rules)
-2. **System body**: agent's `prompt_files.system` → `.cook/prompts/SYSTEM.md` → `.cook/SYSTEM.md`
-3. **Append files**: each file in `prompt_files.system_append`, in order
-4. **Context files**: `AGENTS.md`, `CLAUDE.md`, `cook.md` (auto-discovered in cwd)
-
-Set `ignore_agents_md: true` on an agent to skip `AGENTS.md` and `CLAUDE.md` (still includes `cook.md`).
+设置 `ignore_agents_md: true` 可跳过 `AGENTS.md` 和 `CLAUDE.md`（仍包含 `cook.md`）。
 
 ---
 
-## Session Logs & Visualization
+## 安装
 
-Enable `session_logs: true` in config to record detailed run history.
+### 下载二进制
 
-```
-~/.cook/sessions/<uuid>/
-├── session.json       # metadata (time, agent, provider, model, args)
-└── events.jsonl       # append-only event stream
-```
+从 [Releases](https://github.com/zgaz/reagent/releases) 页面下载对应平台的二进制文件：
 
-Events cover the full lifecycle: session start/finish, agent runs, tool calls, confirmation decisions, and complete prompt payloads.
-
-**Generate a visual report:**
-
-```bash
-bun run share              # latest session
-bun run share -- <id>      # specific session
-bun run share:all          # all sessions
-```
-
-This creates a `session.html` file you can open in any browser.
-
----
-
-## CLI Reference
-
-```
-cook [options] <instruction>
-cook config init [--global] [--local] [--force]
-cook login [openai] [--device-code] [--no-browser]
-cook login status
-cook logout [openai]
-cook /alias-name
-```
-
-| Flag | Description |
-|------|-------------|
-| `-y`, `--yes` | Skip all confirmation prompts |
-| `--quiet` | Suppress status/progress output |
-| `--debug` | Enable detailed debug logs |
-| `--verbose` | Alias for `--debug` |
-| `--agent <name>` | Select a configured agent |
-| `--max-steps <n>` | Override max tool iterations |
-| `--timeout <ms>` | Override bash command timeout |
-| `--allow-outside-cwd` | Allow file access outside working directory |
-| `--dry-run` | Preview mutations without executing |
-| `--raw` | Enable raw bash terminal output |
-| `-V`, `--version` | Print version and exit |
-
----
-
-## Installation
-
-### Install Script
+| 平台 | 架构 | 文件 |
+|------|------|------|
+| macOS | Apple Silicon | `reagent-darwin-arm64` |
+| macOS | Intel | `reagent-darwin-x64` |
+| Linux | x64 | `reagent-linux-x64` |
+| Linux | x64 (旧 CPU) | `reagent-linux-x64-baseline` |
+| Linux | x64 (musl) | `reagent-linux-x64-musl` |
+| Linux | ARM64 | `reagent-linux-arm64` |
+| Windows | x64 | `reagent-windows-x64.exe` |
 
 ```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/devadutta/cook/main/install.sh | sh
+# 移动到 PATH
+chmod +x reagent-darwin-arm64
+mv reagent-darwin-arm64 /usr/local/bin/reagent
+
+# 使用
+reagent
 ```
-
-**Options:**
-
-```bash
-# specific version
-curl ... | COOK_VERSION=v0.1.0 sh
-
-# custom install directory
-curl ... | COOK_INSTALL_DIR="$HOME/bin" sh
-```
-
-Pre-built binaries are available for:
-
-| Platform | Architecture |
-|----------|-------------|
-| macOS | arm64, x64 |
-| Linux | arm64, x64, x64-baseline, x64-musl |
-| Windows | x64 |
-
-### Build From Source
-
-```bash
-git clone https://github.com/devadutta/cook.git
-cd cook
-bun install
-bun run build:compile    # → dist/cook (standalone binary)
-```
-
----
-
-## Development
-
-```bash
-bun install              # install dependencies
-bun test                 # run tests
-bun run typecheck        # type-check without emitting
-bun run build            # bundle → dist/cook.js (needs Bun runtime)
-bun run build:compile    # compile → dist/cook (standalone binary)
-bun run release          # build all platform binaries → dist/release/
-```
-
-Versioning is automated via [release-please](https://github.com/googleapis/release-please) on the `main` branch.
 
 ---
 
 <p align="center">
-  <sub>Built with <a href="https://bun.sh">Bun</a> and the <a href="https://sdk.vercel.ai">Vercel AI SDK</a>.</sub>
+  <sub>面向安全应急响应的终端 AI Agent · 单二进制部署</sub>
 </p>
