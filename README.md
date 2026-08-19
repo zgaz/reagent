@@ -323,6 +323,18 @@ reagent
 
 ---
 
+## 致谢 / Acknowledgement
+
+本项目基于开源项目 [cook](https://github.com/devadutta/cook) 修改而来，在原版基础上进行了大幅定制：
+
+- 重命名并适配安全应急响应场景（人设、审计日志、会话哈希链）
+- 新增交互式对话 UI、上下文管理、命令历史、Tab 补全等
+- 强化安全默认：变更确认、路径作用域、dry-run
+
+感谢 [devadutta](https://github.com/devadutta) 的 cook 项目。
+
+---
+
 <p align="center">
   <sub>面向安全应急响应的终端 AI Agent · 单二进制部署</sub>
 </p>
