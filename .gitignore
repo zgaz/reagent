@@ -21,7 +21,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.test.local
 .env.production.local
 .env.local
-.cook/config.json
 
 # caches
 .eslintcache
@@ -42,3 +41,4 @@ config2.json
 .cook/sessions/
 .cook/.DS_Store
 .learnings/
+.DS_Store

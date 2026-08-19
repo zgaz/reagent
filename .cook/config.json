@@ -1,0 +1,26 @@
+{
+  "max_steps": 12,
+  "bash_timeout_ms": 30000,
+  "bash_output_limit_bytes": 1048576,
+  "stdin_inline_max_bytes": 65536,
+  "require_confirm_mutations": true,
+  "allow_outside_cwd": false,
+  "quiet": false,
+  "debug": false,
+  "session_logs": false,
+  "agents": {
+    "default": {
+      "provider": "openai",
+      "model": "mimo-v2.5-pro"
+    },
+    "fast": {
+      "provider": "openai",
+      "model": "mimo-v2.5"
+    }
+  },
+  "default_agent": "default",
+  "provider_api_keys": {
+    "OPENAI_API_KEY": "",
+    "OPENAI_BASE_URL": ""
+  }
+}
