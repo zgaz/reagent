@@ -60,6 +60,7 @@ reagent /create-pr
   - [命令别名](#命令别名)
   - [Agent 配置](#agent-配置)
   - [输出模式](#输出模式)
+  - [交互模式](#交互模式)
 - [安全机制](#safety)
 - [审计取证](#audit)
 - [配置](#configuration)
@@ -178,6 +179,63 @@ reagent "列出所有导出的函数" > functions.txt
 reagent --raw "查一下我的公网 IP"
 # → 直接打印命令输出，不做总结
 ```
+
+### 交互模式
+
+`reagent` 无参数直接进入交互对话，跨轮次保留上下文：
+
+```
+$ reagent
+[reagent] 交互式对话已启动，输入指令开始执行任务。
+reagent❯ 查看当前目录文件
+```
+
+交互模式内置以下命令（输入 `/help` 查看）：
+
+| 命令 | 功能 |
+|------|------|
+| `/exit` / `/quit` | 退出对话 |
+| `/clear` | 清空当前对话上下文 |
+| `/remember 内容` | 手动把一段背景注入上下文 |
+| `/remember @文件路径` | 从文件注入上下文 |
+| `/context` | 查看当前上下文占用（模型、比例、分类） |
+| `/context 256k` 或 `/context 1m` | 手动设置上下文上限（最大 1m） |
+| `/compact` | 手动把早期历史压缩为摘要（保留关键信息） |
+| `/help` | 显示帮助 |
+| `Ctrl+C` | 打断正在执行的 agent，或清空当前输入 |
+
+#### `/context` 示例
+
+```
+reagent❯ /context
+[上下文] openai/deepseek-v4-flash
+  占用: 12k / 117k（~3.5k tokens，10%）
+  ░░░░░░░░░░░░░░░░░░░░ 10%
+  分类:
+    ├ 系统提示词: ~788 tokens
+    ├ 工具定义:   ~550 tokens
+    ├ 对话历史:   ~2.1k tokens（5 条消息）
+    └ 剩余空间:   90.0%
+```
+
+可以手动调整上下文上限：
+```
+reagent❯ /context 256k   # 设为 256k
+reagent❯ /context 1m     # 设为 1MB（最大）
+```
+
+#### `/compact` 压缩历史
+
+对话过长时，用 `/compact` 把早期消息压缩为摘要，释放上下文空间，保留关键信息不丢失。
+
+#### `/remember` 注入上下文
+
+```
+reagent❯ /remember 当前系统是生产环境，操作前必须三思
+reagent❯ /remember @./背景说明.md
+```
+
+把重要背景注入上下文，agent 在后续回答中会参考这些信息。
 
 ---
 
